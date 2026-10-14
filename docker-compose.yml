@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: courier
+      POSTGRES_PASSWORD: courier
+      POSTGRES_DB: courier
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courier"]
+      interval: 3s
+      retries: 10
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+psycopg://courier:courier@db:5432/courier
+      SIMULATE: "1"          # 0 — выключить демо-курьеров
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+
+  web:
+    build: ./web
+    depends_on: [api]
+    ports: ["8080:80"]
+
+volumes:
+  pgdata:
